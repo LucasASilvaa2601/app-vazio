@@ -1,47 +1,61 @@
 const express = require("express");
 const router = express.Router();
  
+require("dotenv").config();
+const nodemailer = require("nodemailer");
+ 
 const { body, validationResult } = require("express-validator");
  
+// Abrir a página do formulário
 router.get("/", (req, res) => {
     res.render("pages/index", {
         erros: [],
         dados: {}
     });
 });
-
+ 
+// Configurar o envio de e-mail
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+ 
+// Validar os dados enviados pelo formulário
 router.post(
     "/enviar",
     [
         body("nome")
-     .trim()
-      .notEmpty()
-      .withMessage("Digite seu nome."),
+            .trim()
+            .notEmpty()
+            .withMessage("Digite seu nome."),
  
         body("email")
-         .trim()
-         .notEmpty()
-         .withMessage("Digite seu e-mail.")
-        .bail()
-         .isEmail()
-          .withMessage("Digite um e-mail válido."),
+            .trim()
+            .notEmpty()
+            .withMessage("Digite seu e-mail.")
+            .bail()
+            .isEmail()
+            .withMessage("Digite um e-mail válido."),
  
         body("telefone")
-         .trim()
-         .notEmpty()
-         .withMessage("Digite seu telefone."),
+            .trim()
+            .notEmpty()
+            .withMessage("Digite seu telefone."),
  
         body("assunto")
-         .trim()
-         .notEmpty()
-        .withMessage("Digite o assunto."),
+            .trim()
+            .notEmpty()
+            .withMessage("Digite o assunto."),
  
         body("mensagem")
-         .trim()
-        .notEmpty()
-         .withMessage("Digite sua mensagem.")
+            .trim()
+            .notEmpty()
+            .withMessage("Digite sua mensagem.")
     ],
-    (req, res) => {
+    async (req, res) => {
         const resultado = validationResult(req);
  
         if (!resultado.isEmpty()) {
@@ -51,9 +65,29 @@ router.post(
             });
         }
  
-        res.send("Validação concluída.seus dados estão corretos!");
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: process.env.EMAIL_USER,
+                replyTo: req.body.email,
+                subject: req.body.assunto,
+                text:
+                    "Nome: " + req.body.nome +
+                    "\nE-mail: " + req.body.email +
+                    "\nTelefone: " + req.body.telefone +
+                    "\nAssunto: " + req.body.assunto +
+                    "\n\nMensagem:\n" + req.body.mensagem
+            });
+ 
+            res.send("E-mail enviado com sucesso! Confira sua caixa de entrada.");
+        } catch (erro) {
+            console.error("Erro ao enviar o e-mail:", erro.message);
+ 
+            res.status(500).send(
+                "Não foi possível enviar o e-mail. Confira as configurações."
+            );
+        }
     }
 );
  
 module.exports = router;
- 
