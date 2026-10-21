@@ -1,0 +1,59 @@
+const express = require("express");
+const router = express.Router();
+ 
+const { body, validationResult } = require("express-validator");
+ 
+router.get("/", (req, res) => {
+    res.render("pages/index", {
+        erros: [],
+        dados: {}
+    });
+});
+
+router.post(
+    "/enviar",
+    [
+        body("nome")
+     .trim()
+      .notEmpty()
+      .withMessage("Digite seu nome."),
+ 
+        body("email")
+         .trim()
+         .notEmpty()
+         .withMessage("Digite seu e-mail.")
+        .bail()
+         .isEmail()
+          .withMessage("Digite um e-mail válido."),
+ 
+        body("telefone")
+         .trim()
+         .notEmpty()
+         .withMessage("Digite seu telefone."),
+ 
+        body("assunto")
+         .trim()
+         .notEmpty()
+        .withMessage("Digite o assunto."),
+ 
+        body("mensagem")
+         .trim()
+        .notEmpty()
+         .withMessage("Digite sua mensagem.")
+    ],
+    (req, res) => {
+        const resultado = validationResult(req);
+ 
+        if (!resultado.isEmpty()) {
+            return res.status(400).render("pages/index", {
+                erros: resultado.array(),
+                dados: req.body
+            });
+        }
+ 
+        res.send("Validação concluída.seus dados estão corretos!");
+    }
+);
+ 
+module.exports = router;
+ 
